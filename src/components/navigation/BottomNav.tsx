@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, MessageCircle, Camera, Newspaper } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -17,29 +16,21 @@ const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-xl border-t border-border/30 safe-bottom shadow-medium">
-      <div className="flex items-center justify-around py-2 px-4">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-border safe-bottom shadow-md">
+      <div className="flex items-center justify-around py-2 px-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
-            <motion.button
+            <button
               key={item.id}
-              whileTap={{ scale: 0.9 }}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all touch-target ${
-                isActive ? 'text-primary' : 'text-muted-foreground'
+              className={`flex flex-col items-center gap-1 py-2 px-3 rounded-lg transition-colors touch-target min-w-0 ${
+                isActive ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-muted'
               }`}
             >
-              <motion.div
-                animate={isActive ? { scale: 1.1 } : { scale: 1 }}
-                className={`p-2 rounded-xl transition-colors ${
-                  isActive ? 'bg-primary/10' : ''
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-              </motion.div>
-              <span className="text-xs font-medium">{item.label}</span>
-            </motion.button>
+              <item.icon className="w-5 h-5" />
+              <span className="text-[10px] sm:text-xs font-medium truncate max-w-full">{item.label}</span>
+            </button>
           );
         })}
       </div>

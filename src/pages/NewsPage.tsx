@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, TrendingUp, FileText, Banknote, Calendar, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -9,14 +8,6 @@ import { getNews, NewsItem } from '@/api/mockApi';
 import BottomNav from '@/components/navigation/BottomNav';
 
 type TabId = 'schemes' | 'news' | 'prices';
-
-const FloatingParticles = () => (
-  <div className="particles">
-    {[...Array(10)].map((_, i) => (
-      <div key={i} className="particle" />
-    ))}
-  </div>
-);
 
 const NewsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -64,20 +55,17 @@ const NewsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen hero-bg pb-24 relative">
-      <FloatingParticles />
-
+    <div className="min-h-screen hero-bg pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-30 glass border-b border-border/30 safe-top">
+      <header className="sticky top-0 z-30 bg-white border-b border-border safe-top shadow-sm">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+            <button
               onClick={() => navigate('/dashboard')}
-              className="p-2 rounded-xl bg-white/80 border border-border/30 touch-target shadow-soft"
+              className="p-2 rounded-lg bg-muted hover:bg-muted/80 touch-target transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-foreground" />
-            </motion.button>
+            </button>
             <h1 className="text-lg font-semibold text-foreground">{t('news.title')}</h1>
           </div>
           <LanguageSelector variant="compact" />
@@ -86,31 +74,29 @@ const NewsPage: React.FC = () => {
         {/* Tabs */}
         <div className="flex px-4 pb-3 gap-2 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
-            <motion.button
+            <button
               key={tab.id}
-              whileTap={{ scale: 0.95 }}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all font-medium text-sm ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg whitespace-nowrap transition-all font-medium text-sm ${
                 activeTab === tab.id
-                  ? 'text-white shadow-medium'
-                  : 'bg-white/80 text-muted-foreground border border-border/30'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-white text-muted-foreground border border-border hover:bg-muted'
               }`}
-              style={activeTab === tab.id ? { background: 'linear-gradient(135deg, hsl(150 30% 20%) 0%, hsl(160 25% 25%) 100%)' } : {}}
             >
               <tab.icon className="w-4 h-4" />
               <span>{tab.label}</span>
-            </motion.button>
+            </button>
           ))}
         </div>
       </header>
 
-      <main className="relative z-10 p-4 space-y-4">
+      <main className="p-4 space-y-4">
         {isLoading ? (
           // Skeleton Loaders
           <>
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white/90 backdrop-blur-sm rounded-3xl border border-border/30 shadow-medium p-4 space-y-3">
-                <div className="skeleton h-40 w-full rounded-xl" />
+              <div key={i} className="simple-card p-4 space-y-3">
+                <div className="skeleton h-40 w-full rounded-lg" />
                 <div className="skeleton h-6 w-3/4" />
                 <div className="skeleton h-4 w-full" />
                 <div className="skeleton h-4 w-2/3" />
@@ -119,13 +105,10 @@ const NewsPage: React.FC = () => {
           </>
         ) : (
           <>
-            {filteredNews.map((item, index) => (
-              <motion.article
+            {filteredNews.map((item) => (
+              <article
                 key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white/90 backdrop-blur-sm rounded-3xl border border-border/30 shadow-medium overflow-hidden"
+                className="simple-card overflow-hidden"
               >
                 {/* Image */}
                 <div className="relative h-40 bg-muted">
@@ -167,20 +150,17 @@ const NewsPage: React.FC = () => {
                       <Calendar className="w-4 h-4" />
                       <span>{formatDate(item.date)}</span>
                     </div>
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      className="flex items-center gap-1 text-sm text-primary font-semibold"
-                    >
+                    <button className="flex items-center gap-1 text-sm text-primary font-semibold hover:underline">
                       {t('news.readMore')}
                       <ExternalLink className="w-4 h-4" />
-                    </motion.button>
+                    </button>
                   </div>
                 </div>
-              </motion.article>
+              </article>
             ))}
 
             {filteredNews.length === 0 && (
-              <div className="bg-white/90 backdrop-blur-sm rounded-3xl border border-border/30 shadow-medium p-8 text-center">
+              <div className="simple-card p-8 text-center">
                 <p className="text-muted-foreground">No items found</p>
               </div>
             )}

@@ -5,6 +5,9 @@ interface User {
   phone: string;
   farmerId?: string;
   name?: string;
+  location?: string;
+  farmSize?: string;
+  crops?: string;
 }
 
 interface AuthContextType {
@@ -13,6 +16,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (phone: string, farmerId?: string) => Promise<void>;
   logout: () => void;
+  updateProfile: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,6 +66,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('kisanmitra_user');
   };
 
+  const updateProfile = (updates: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+      localStorage.setItem('kisanmitra_user', JSON.stringify(updatedUser));
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -70,6 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isLoading,
         login,
         logout,
+        updateProfile,
       }}
     >
       {children}

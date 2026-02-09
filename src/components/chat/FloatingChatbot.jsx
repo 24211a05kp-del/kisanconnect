@@ -3,6 +3,7 @@ import { MessageCircle, X, Send, Minus, Loader2, Mic, MicOff, Volume2 } from 'lu
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { sendChatMessage } from '@/services/aiChatbotService';
 
 const FloatingChatbot = () => {
     const { t } = useTranslation();
@@ -26,13 +27,8 @@ const FloatingChatbot = () => {
     // 4. State for showing a loading spinner while waiting for AI
     const [isLoading, setIsLoading] = useState(false);
 
-    // 5. Voice states
-    const [isListening, setIsListening] = useState(false);
-
     // Ref to automatically scroll to the bottom when new messages arrive
     const messagesEndRef = useRef(null);
-    const recognitionRef = useRef(null);
-    const recognitionTimeoutRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -102,30 +98,12 @@ const FloatingChatbot = () => {
         setInput(''); // Clear input box
 
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8081';
-            console.log(`[Frontend] 🚀 Sending message to AI Backend: ${backendUrl}/chat`);
-
-            const response = await fetch(`${backendUrl}/chat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: finalMessage,
-                    language: currentLanguage, // Standard fallback
-                    uiLanguage: currentLanguage,
-                    userLanguage: detectedLanguage
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.error) {
-                throw new Error(data.error);
-            }
+            const data = await sendChatMessage(finalMessage, currentLanguage);
 
             // ADD AI RESPONSE: Update messages with what Gemini said
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: data.content,
+                content: data.reply,
                 suggestions: data.suggestions || [],
                 timestamp: new Date()
             }]);
@@ -133,7 +111,7 @@ const FloatingChatbot = () => {
             console.error('Chat error:', error);
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: 'Sorry, I encountered an error. Please ensure the backend server is running with a valid Gemini API key.',
+                content: 'Sorry, I encountered an error. Please ensure you have a valid Gemini API key in your .env file.',
                 timestamp: new Date()
             }]);
         } finally {
@@ -142,61 +120,13 @@ const FloatingChatbot = () => {
     };
 
     const toggleVoiceInput = () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert("Speech recognition is not supported in this browser.");
-            return;
-        }
-
-        if (isListening) {
-            if (recognitionRef.current) {
-                recognitionRef.current.stop();
-            }
-            setIsListening(false);
-            if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-            return;
-        }
-
-        const recognition = new SpeechRecognition();
-        recognitionRef.current = recognition;
-        recognition.lang = currentLanguage === 'hi' ? 'hi-IN' : currentLanguage === 'te' ? 'te-IN' : 'en-IN';
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onstart = () => {
-            setIsListening(true);
-            recognitionTimeoutRef.current = setTimeout(() => {
-                if (recognitionRef.current) recognitionRef.current.stop();
-            }, 5000);
-        };
-
-        recognition.onend = () => {
-            setIsListening(false);
-            if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-        };
-
-        recognition.onerror = () => {
-            setIsListening(false);
-            if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-        };
-
-        recognition.onresult = (event) => {
-            if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-            const transcript = event.results[0][0].transcript;
-            setInput(prev => prev + (prev ? ' ' : '') + transcript);
-        };
-
-        recognition.start();
+        // Voice functionality removed as requested
+        console.log("Voice input disabled");
     };
 
     const speakMessage = (text) => {
-        if ('speechSynthesis' in window) {
-            speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = currentLanguage === 'hi' ? 'hi-IN' : currentLanguage === 'te' ? 'te-IN' : 'en-IN';
-            utterance.rate = 0.9;
-            speechSynthesis.speak(utterance);
-        }
+        // Speech synthesis removed as requested
+        console.log("Speech synthesis disabled");
     };
 
     const handleSuggestionClick = (suggestion) => {
@@ -290,12 +220,9 @@ const FloatingChatbot = () => {
                             <div className="flex gap-2 items-center">
                                 <button
                                     onClick={toggleVoiceInput}
-                                    className={`p-2 rounded-full transition-all flex-shrink-0 ${isListening
-                                        ? 'bg-red-500 text-white animate-pulse'
-                                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                                        }`}
+                                    className="p-2 rounded-full transition-all flex-shrink-0 bg-gray-100 text-gray-500 hover:bg-gray-200"
                                 >
-                                    {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                                    <Mic className="w-4 h-4" />
                                 </button>
                                 <input
                                     type="text"

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageSelector } from '@/components/ui/LanguageSelector';
 import { LoadingDots } from '@/components/ui/LoadingSpinner';
-import { sendChatMessage } from '@/api/mockApi';
+import { sendChatMessage } from '@/services/aiChatbotService';
 import BottomNav from '@/components/navigation/BottomNav';
 
 const ChatPage = () => {
@@ -24,12 +24,8 @@ const ChatPage = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const recognitionRef = useRef(null);
-  const recognitionTimeoutRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -101,7 +97,7 @@ const ChatPage = () => {
       const botMessage = {
         id: `bot_${Date.now()}`,
         role: 'assistant',
-        content: response.message,
+        content: response.reply,
         timestamp: new Date(),
         suggestions: response.suggestions,
       };
@@ -125,64 +121,13 @@ const ChatPage = () => {
   };
 
   const toggleVoiceInput = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser.");
-      return;
-    }
-
-    if (isListening) {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      setIsListening(false);
-      if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-    recognition.lang = currentLanguage === 'hi' ? 'hi-IN' : currentLanguage === 'te' ? 'te-IN' : 'en-IN';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      // Auto-stop after 5 seconds of silence if no result
-      recognitionTimeoutRef.current = setTimeout(() => {
-        if (recognitionRef.current) recognitionRef.current.stop();
-      }, 5000);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-    };
-
-    recognition.onerror = () => {
-      setIsListening(false);
-      if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-    };
-
-    recognition.onresult = (event) => {
-      if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-      const transcript = event.results[0][0].transcript;
-      setInput(prev => prev + (prev ? ' ' : '') + transcript);
-    };
-
-    recognition.start();
+    // Voice functionality removed as requested
+    console.log("Voice input disabled");
   };
 
   const speakMessage = (text) => {
-    if ('speechSynthesis' in window) {
-      // Stop any current speech
-      speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = currentLanguage === 'hi' ? 'hi-IN' : currentLanguage === 'te' ? 'te-IN' : 'en-IN';
-      utterance.rate = 0.9; // Slightly slower for better clarity
-      speechSynthesis.speak(utterance);
-    }
+    // Speech synthesis removed as requested
+    console.log("Speech synthesis disabled");
   };
 
   return (
@@ -277,12 +222,9 @@ const ChatPage = () => {
           <div className="bg-white border border-[#eeede6] rounded-[2.5rem] p-2 flex items-center gap-2 shadow-xl shadow-black/5">
             <button
               onClick={toggleVoiceInput}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isListening
-                ? 'bg-red-500 text-white animate-pulse'
-                : 'bg-[#f4f2eb] text-[#7a8478] hover:bg-[#eeede6]'
-                }`}
+              className="w-12 h-12 rounded-full flex items-center justify-center transition-all bg-[#f4f2eb] text-[#7a8478] hover:bg-[#eeede6]"
             >
-              {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              <Mic className="w-5 h-5" />
             </button>
 
             <input

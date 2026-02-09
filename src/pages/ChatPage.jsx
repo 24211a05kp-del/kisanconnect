@@ -28,75 +28,28 @@ const ChatPage = () => {
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const recognitionRef = useRef(null);
-  const recognitionTimeoutRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Helper to detect language
-  const detectLanguage = (text) => {
-    if (/[\u0900-\u097F]/.test(text)) return 'hi';
-    if (/[\u0C00-\u0C7F]/.test(text)) return 'te';
-    return 'en';
-  };
-
-  // Helper for Hinglish to Hindi Conversion
-  const transliterateToHindi = async (text) => {
-    try {
-      const url = `https://inputtools.google.com/request?text=${encodeURIComponent(text)}&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=test`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data[0] === 'SUCCESS') {
-        return data[1][0][1][0];
-      }
-    } catch (e) {
-      console.error("Transliteration error:", e);
-    }
-    return text;
-  };
-
-  // Mock translation function for demonstration
-  const getMockTranslation = (text, targetLang) => {
-    return `${text} (${targetLang})`;
-  };
-
   const handleSend = async (text) => {
     const messageText = text || input.trim();
     if (!messageText) return;
 
-    const userLanguage = detectLanguage(messageText);
-    let finalMessage = messageText;
-    let isTranslated = false;
-
-    setIsLoading(true);
-
-    // Smart Hinglish -> Hindi Script Conversion
-    if (currentLanguage === 'hi' && userLanguage === 'en') {
-      finalMessage = await transliterateToHindi(messageText);
-      isTranslated = true;
-    }
-    // Other Translations
-    else if (userLanguage !== currentLanguage) {
-      finalMessage = getMockTranslation(messageText, currentLanguage);
-      isTranslated = true;
-    }
-
     const userMessage = {
       id: `user_${Date.now()}`,
       role: 'user',
-      content: finalMessage,
-      isTranslated: isTranslated,
+      content: messageText,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setIsLoading(true);
 
     try {
-      console.log(`[ChatPage] 📤 Sending translated message: "${finalMessage}" to AI Service`);
-      const response = await sendChatMessage(finalMessage, currentLanguage);
+      const response = await sendChatMessage(messageText, currentLanguage);
 
       const botMessage = {
         id: `bot_${Date.now()}`,
@@ -107,11 +60,11 @@ const ChatPage = () => {
       };
 
       setMessages((prev) => [...prev, botMessage]);
-    } catch (error) {
+    } catch {
       const errorMessage = {
         id: `error_${Date.now()}`,
         role: 'assistant',
-        content: error.message || t('errors.serverError'),
+        content: t('errors.serverError'),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -125,62 +78,14 @@ const ChatPage = () => {
   };
 
   const toggleVoiceInput = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser.");
-      return;
-    }
-
-    if (isListening) {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      setIsListening(false);
-      if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-    recognition.lang = currentLanguage === 'hi' ? 'hi-IN' : currentLanguage === 'te' ? 'te-IN' : 'en-IN';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      // Auto-stop after 5 seconds of silence if no result
-      recognitionTimeoutRef.current = setTimeout(() => {
-        if (recognitionRef.current) recognitionRef.current.stop();
-      }, 5000);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-    };
-
-    recognition.onerror = () => {
-      setIsListening(false);
-      if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-    };
-
-    recognition.onresult = (event) => {
-      if (recognitionTimeoutRef.current) clearTimeout(recognitionTimeoutRef.current);
-      const transcript = event.results[0][0].transcript;
-      setInput(prev => prev + (prev ? ' ' : '') + transcript);
-    };
-
-    recognition.start();
+    setIsListening(!isListening);
   };
 
   const speakMessage = (text) => {
     if ('speechSynthesis' in window) {
-      // Stop any current speech
-      speechSynthesis.cancel();
-
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = currentLanguage === 'hi' ? 'hi-IN' : currentLanguage === 'te' ? 'te-IN' : 'en-IN';
-      utterance.rate = 0.9; // Slightly slower for better clarity
+      utterance.lang =
+        currentLanguage === 'hi' ? 'hi-IN' : currentLanguage === 'te' ? 'te-IN' : 'en-IN';
       speechSynthesis.speak(utterance);
     }
   };
@@ -226,11 +131,6 @@ const ChatPage = () => {
                   }`}
               >
                 <div className="text-sm sm:text-base leading-relaxed font-medium">
-                  {message.role === 'user' && message.isTranslated && (
-                    <span className="block text-[10px] uppercase tracking-wider opacity-70 mb-1 font-bold">
-                      {t('chatbot.translated')}
-                    </span>
-                  )}
                   {message.content}
                 </div>
 

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageSelector } from '@/components/ui/LanguageSelector';
 import { LoadingDots } from '@/components/ui/LoadingSpinner';
-import { sendChatMessage } from '@/api/mockApi';
+import { sendChatToGemini } from '@/services/geminiService';
 import BottomNav from '@/components/navigation/BottomNav';
 
 const ChatPage = () => {
@@ -49,7 +49,10 @@ const ChatPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await sendChatMessage(messageText, currentLanguage);
+      // Get conversation history (last 10 messages for context)
+      const conversationHistory = messages.slice(-10);
+      
+      const response = await sendChatToGemini(messageText, currentLanguage, conversationHistory);
 
       const botMessage = {
         id: `bot_${Date.now()}`,
@@ -60,11 +63,14 @@ const ChatPage = () => {
       };
 
       setMessages((prev) => [...prev, botMessage]);
-    } catch {
+    } catch (error) {
+      console.error('Chat error:', error);
       const errorMessage = {
         id: `error_${Date.now()}`,
         role: 'assistant',
-        content: t('errors.serverError'),
+        content: error.message.includes('API key') 
+          ? 'Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your .env file.'
+          : t('errors.serverError'),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);

@@ -272,3 +272,132 @@ export const testGeminiConnection = async () => {
     return false;
   }
 };
+
+/**
+ * Send chat message to Gemini AI
+ * @param {string} message - User's message
+ * @param {string} language - Language code (en, hi, te)
+ * @param {Array} conversationHistory - Previous messages for context
+ * @returns {Promise<Object>} - AI response with message and suggestions
+ */
+export const sendChatToGemini = async (message, language = 'en', conversationHistory = []) => {
+  if (!isGeminiConfigured()) {
+    throw new Error('Gemini API key not configured');
+  }
+
+  try {
+    const systemPrompt = buildChatSystemPrompt(language);
+    
+    // Build conversation context
+    const contents = [
+      {
+        parts: [{ text: systemPrompt }],
+      },
+      ...conversationHistory.map(msg => ({
+        parts: [{ text: msg.content }],
+        role: msg.role === 'user' ? 'user' : 'model',
+      })),
+      {
+        parts: [{ text: message }],
+        role: 'user',
+      },
+    ];
+
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents,
+        generationConfig: {
+          temperature: 0.9,
+          maxOutputTokens: 2048,
+          topP: 0.95,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!aiResponse) {
+      throw new Error('No response from Gemini AI');
+    }
+
+    // Extract suggestions if present
+    const suggestions = extractSuggestions(aiResponse, language);
+
+    return {
+      message: aiResponse,
+      suggestions,
+    };
+  } catch (error) {
+    console.error('Gemini chat error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Build system prompt for chat assistant
+ */
+function buildChatSystemPrompt(language) {
+  const basePrompt = `You are KisanMitra AI, an expert agricultural assistant specializing in cotton farming in India. You help farmers with:
+
+- Crop management and best practices
+- Disease identification and treatment
+- Pest control strategies
+- Soil health and fertilization
+- Irrigation and water management
+- Weather-based farming advice
+- Market prices and selling strategies
+- Government schemes and subsidies
+- Organic farming methods
+- Seasonal planning
+
+Provide practical, actionable advice that farmers can implement immediately. Use simple language and be encouraging. When discussing treatments or chemicals, provide specific product names and dosages. Always consider the Indian farming context.
+
+Keep responses concise (2-3 paragraphs max) unless detailed explanation is requested. Be friendly and supportive.`;
+
+  if (language === 'hi') {
+    return basePrompt + '\n\nIMPORTANT: Respond in Hindi (Devanagari script). Use simple Hindi that farmers understand.';
+  } else if (language === 'te') {
+    return basePrompt + '\n\nIMPORTANT: Respond in Telugu script. Use simple Telugu that farmers understand.';
+  }
+  
+  return basePrompt;
+}
+
+/**
+ * Extract follow-up suggestions from AI response
+ */
+function extractSuggestions(text, language) {
+  // Default suggestions based on language
+  const defaultSuggestions = {
+    en: [
+      'Tell me more',
+      'What about prevention?',
+      'Show me alternatives',
+      'Explain in detail',
+    ],
+    hi: [
+      'और बताएं',
+      'रोकथाम के बारे में',
+      'विकल्प बताएं',
+      'विस्तार से समझाएं',
+    ],
+    te: [
+      'మరింత చెప్పండి',
+      'నివారణ గురించి',
+      'ప్రత్యామ్నాయాలు చూపించండి',
+      'వివరంగా వివరించండి',
+    ],
+  };
+
+  return defaultSuggestions[language] || defaultSuggestions.en;
+}

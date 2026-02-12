@@ -51,7 +51,7 @@ export const analyzePlantImageWithGemini = async (imageFile, language = 'en') =>
         ],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 2048,
+          maxOutputTokens: 8192,
           topP: 0.95,
         },
       }),
@@ -113,40 +113,89 @@ async function fileToBase64WithoutPrefix(file) {
  * Build the vision prompt for cotton plant analysis
  */
 function buildVisionPrompt(language) {
-  const basePrompt = `You are an expert agricultural pathologist specializing in cotton plant diseases. Analyze this cotton plant image and provide a detailed assessment.
+  const basePrompt = `You are an expert agricultural pathologist. Analyze this cotton plant and provide COMPLETE treatment details with exact medications and dosages.
 
-**IMPORTANT: Start your response with this exact format:**
-**Disease Status: [Healthy/Diseased]**
-**Specific Disease: [Disease Name or "None - Plant is Healthy"]**
-**Confidence: [0-100]%**
+FORMAT (No asterisks/dashes in content):
 
-Then provide:
+Disease Status: [Healthy/Diseased]
+Specific Disease: [Name]
+Confidence: [0-100]%
 
-1. **Visual Assessment**: What you observe in the image (leaf color, spots, wilting, etc.)
 
-2. **Disease Identification**: 
-   - If diseased: Identify the specific disease (e.g., Bacterial Blight, Fusarium Wilt, Alternaria Leaf Spot, Cercospora Leaf Spot, Angular Leaf Spot, etc.)
-   - If healthy: Confirm the plant's good health
+🔍 Visual Assessment
+Describe symptoms: spots, color, size, location, texture.
 
-3. **Symptoms Analysis**: Detailed description of visible symptoms
 
-4. **Severity Level**: Rate as Mild, Moderate, or Severe (if diseased)
+🦠 Disease Details
+Name disease, pathogen type, how it spreads.
 
-5. **Treatment Recommendations**:
-   - Chemical treatments with specific product names and dosages
-   - Organic/natural alternatives
-   - Immediate actions needed
 
-6. **Prevention Tips**: How to prevent this issue in the future
+📊 Severity: [Mild/Moderate/Severe]
 
-7. **Prognosis**: Expected outcome with proper treatment
 
-Format your response clearly with emojis for better readability. Be specific and actionable.`;
+💊 TREATMENT (MUST COMPLETE ALL 3 OPTIONS)
+
+OPTION 1: [Product Name - e.g., Mancozeb 75% WP]
+Active Ingredient: [Chemical]
+Dosage: [X grams per liter OR X kg per acre]
+Mix: [How to prepare]
+Apply: [Spray method, timing]
+Frequency: [Every X days, X times]
+Duration: [X weeks]
+Water: [Liters per acre]
+Cost: [Rs. X-Y per acre]
+
+OPTION 2: [Product Name - e.g., Copper Oxychloride]
+Active Ingredient: [Chemical]
+Dosage: [Exact amount]
+Mix: [Preparation]
+Apply: [Method]
+Frequency: [Schedule]
+Duration: [Period]
+Cost: [Price]
+
+OPTION 3: [Product Name - e.g., Carbendazim]
+Active Ingredient: [Chemical]
+Dosage: [Exact amount]
+Mix: [Preparation]
+Apply: [Method]
+Frequency: [Schedule]
+Cost: [Price]
+
+ORGANIC OPTIONS:
+
+1. [Natural remedy]: [Ingredients with amounts], [Preparation], [Application]
+2. [Second remedy]: [Details]
+
+IMMEDIATE ACTIONS:
+1. [Action]
+2. [Action]
+3. [Action]
+
+
+🛡️ Prevention
+1. [Practice]
+2. [Practice]
+3. [Practice]
+4. [Practice]
+
+
+📈 Recovery
+Time: [X weeks]
+Yield Impact: [Percentage]
+Success Rate: [Percentage]
+
+
+⚠️ Warnings
+[Critical notes]
+
+
+CRITICAL: Complete ALL treatment options with REAL Indian product names and EXACT dosages. Do not stop until all sections are complete.`;
 
   if (language === 'hi') {
-    return basePrompt + '\n\n**Respond in Hindi (Devanagari script).**';
+    return basePrompt + '\n\nहिंदी में पूरा जवाब दें। सभी दवाओं के नाम और मात्रा बताएं।';
   } else if (language === 'te') {
-    return basePrompt + '\n\n**Respond in Telugu script.**';
+    return basePrompt + '\n\nతెలుగులో పూర్తి సమాధానం ఇవ్వండి। అన్ని మందుల వివరాలు ఇవ్వండి।';
   }
   
   return basePrompt;
